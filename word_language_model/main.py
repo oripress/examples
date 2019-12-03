@@ -132,6 +132,8 @@ def repackage_hidden(h):
 
 def get_batch(source, i):
     seq_len = min(args.bptt, len(source) - 1 - i)
+    if seq_len < args.bptt:
+        return [], []
     data = source[i:i+seq_len]
     target = source[i+1:i+1+seq_len].view(-1)
     return data, target
@@ -139,6 +141,8 @@ def get_batch(source, i):
 
 def get_noise(noise_source, data_source, i):
     seq_len = min(args.bptt, len(data_source) - 1 - i)
+    if seq_len < args.bptt:
+        return [], []
     data = noise_source[i : i + seq_len]
     return data
 
@@ -153,6 +157,8 @@ def evaluate(data_source):
     with torch.no_grad():
         for i in range(0, data_source.size(0) - 1, args.bptt):
             data, targets = get_batch(data_source, i)
+            if len(data) == 0:
+                continue
             noise = torch.randn((data.size(0), data.size(1), args.emsize), device=device)
             if args.model == 'Transformer':
                 output = model(data)
@@ -174,6 +180,8 @@ def train():
         hidden = model.init_hidden(args.batch_size)
     for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
         data, targets = get_batch(train_data, i)
+        if len(data) == 0:
+            continue
         noise = get_noise(train_noise, train_data, i)
         noise = noise.to(device=device)
         # Starting each batch, we detach the hidden state from how it was previously produced.
