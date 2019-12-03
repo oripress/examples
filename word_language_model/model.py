@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class RNNModel(nn.Module):
     """Container module with an encoder, a recurrent module, and a decoder."""
 
@@ -10,13 +11,14 @@ class RNNModel(nn.Module):
         super(RNNModel, self).__init__()
         self.drop = nn.Dropout(dropout)
         self.encoder = nn.Embedding(ntoken, ninp)
+        self.noise_encoder = NoiseEncoder(ninp)
         if rnn_type in ['LSTM', 'GRU']:
             self.rnn = getattr(nn, rnn_type)(ninp, nhid, nlayers, dropout=dropout)
         else:
             try:
                 nonlinearity = {'RNN_TANH': 'tanh', 'RNN_RELU': 'relu'}[rnn_type]
             except KeyError:
-                raise ValueError( """An invalid option for `--model` was supplied,
+                raise ValueError("""An invalid option for `--model` was supplied,
                                  options are ['LSTM', 'GRU', 'RNN_TANH' or 'RNN_RELU']""")
             self.rnn = nn.RNN(ninp, nhid, nlayers, nonlinearity=nonlinearity, dropout=dropout)
         self.decoder = nn.Linear(nhid, ntoken)
@@ -43,9 +45,12 @@ class RNNModel(nn.Module):
         self.encoder.weight.data.uniform_(-initrange, initrange)
         self.decoder.bias.data.zero_()
         self.decoder.weight.data.uniform_(-initrange, initrange)
+        self.noise_encoder.bias.data.zero_()
+        self.noise_encoder.weight.data.uniform_(-initrange, initrange)
 
-    def forward(self, input, hidden):
+    def forward(self, input, hidden, noise):
         emb = self.drop(self.encoder(input))
+        emb = self.drop(self.noise_encoder(emb, noise))
         output, hidden = self.rnn(emb, hidden)
         output = self.drop(output)
         decoded = self.decoder(output)
@@ -58,6 +63,7 @@ class RNNModel(nn.Module):
                     weight.new_zeros(self.nlayers, bsz, self.nhid))
         else:
             return weight.new_zeros(self.nlayers, bsz, self.nhid)
+
 
 # Temporarily leave PositionalEncoding module here. Will be moved somewhere else.
 class PositionalEncoding(nn.Module):
@@ -102,6 +108,7 @@ class PositionalEncoding(nn.Module):
 
         x = x + self.pe[:x.size(0), :]
         return self.dropout(x)
+
 
 class TransformerModel(nn.Module):
     """Container module with an encoder, a recurrent or transformer module, and a decoder."""
@@ -148,3 +155,20 @@ class TransformerModel(nn.Module):
         output = self.transformer_encoder(src, self.src_mask)
         output = self.decoder(output)
         return F.log_softmax(output, dim=-1)
+
+
+class NoiseEncoder(nn.Module):
+    """Container module with an encoder, a recurrent or transformer module, and a decoder."""
+
+    def __init__(self, ninp):
+        super(NoiseEncoder, self).__init__()
+
+        layers = [nn.Linear(2 * ninp, 2 * ninp),
+                  nn.BatchNorm1d(ninp),
+                  nn.ReLU(inplace=True),
+                  nn.Linear(2 * ninp, ninp)]
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, emb, noise):
+        x = torch.cat([emb, noise], dim=1)
+        return self.layers(x)

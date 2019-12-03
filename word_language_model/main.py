@@ -91,6 +91,10 @@ train_data = batchify(corpus.train, args.batch_size)
 val_data = batchify(corpus.valid, eval_batch_size)
 test_data = batchify(corpus.test, eval_batch_size)
 
+train_noise = torch.randn(train_data.size(0), args.emsize)
+val_noise = torch.randn(val_data.size(0), args.emsize)
+test_noise = torch.randn(test_data.size(0), args.emsize)
+
 ###############################################################################
 # Build the model
 ###############################################################################
@@ -133,6 +137,12 @@ def get_batch(source, i):
     return data, target
 
 
+def get_noise(noise_source, data_source, i):
+    seq_len = min(args.bptt, len(data_source) - 1 - i)
+    data = noise_source[i : i + seq_len]
+    return data
+
+
 def evaluate(data_source):
     # Turn on evaluation mode which disables dropout.
     model.eval()
@@ -143,10 +153,11 @@ def evaluate(data_source):
     with torch.no_grad():
         for i in range(0, data_source.size(0) - 1, args.bptt):
             data, targets = get_batch(data_source, i)
+            noise = torch.randn((data.size(0), args.emsize))
             if args.model == 'Transformer':
                 output = model(data)
             else:
-                output, hidden = model(data, hidden)
+                output, hidden = model(data, hidden, noise)
                 hidden = repackage_hidden(hidden)
             output_flat = output.view(-1, ntokens)
             total_loss += len(data) * criterion(output_flat, targets).item()
@@ -163,6 +174,7 @@ def train():
         hidden = model.init_hidden(args.batch_size)
     for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
         data, targets = get_batch(train_data, i)
+        noise = get_noise(train_noise, train_data, i)
         # Starting each batch, we detach the hidden state from how it was previously produced.
         # If we didn't, the model would try backpropagating all the way to start of the dataset.
         model.zero_grad()
@@ -170,7 +182,7 @@ def train():
             output = model(data)
         else:
             hidden = repackage_hidden(hidden)
-            output, hidden = model(data, hidden)
+            output, hidden = model(data, hidden, noise)
         loss = criterion(output.view(-1, ntokens), targets)
         loss.backward()
 
