@@ -164,7 +164,7 @@ class NoiseEncoder(nn.Module):
         super(NoiseEncoder, self).__init__()
 
         layers = [nn.Linear(20 * 2 * ninp, 20 * 2 * ninp),
-                  nn.BatchNorm1d(ninp),
+                  nn.BatchNorm1d(20 * 2 * ninp),
                   nn.ReLU(inplace=True),
                   nn.Linear(20 * 2 * ninp, ninp)]
         self.layers = nn.Sequential(*layers)
