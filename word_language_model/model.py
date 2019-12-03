@@ -46,7 +46,7 @@ class RNNModel(nn.Module):
         self.decoder.bias.data.zero_()
         self.decoder.weight.data.uniform_(-initrange, initrange)
         # self.noise_encoder.bias.data.zero_()
-        self.noise_encoder.weight.data.uniform_(-initrange, initrange)
+        # self.noise_encoder.weight.data.uniform_(-initrange, initrange)
 
     def forward(self, input, hidden, noise):
         emb = self.drop(self.encoder(input))
