@@ -170,8 +170,8 @@ class NoiseEncoder(nn.Module):
         self.layers = nn.Sequential(*layers)
 
     def forward(self, emb, noise):
-        # print('emb size is ', emb.size())
-        # print('noise size is ', noise.size())
+        print('emb size is ', emb.size())
+        print('noise size is ', noise.size())
 
         es0 = emb.size(0)
         es1 = emb.size(1)
