@@ -183,4 +183,6 @@ class NoiseEncoder(nn.Module):
         x = torch.cat([emb, noise], dim=1)
         x = self.layers(x)
         x = x.view(es0, es1, -1)
+
+        print('x size is ', x.size())
         return x
