@@ -170,5 +170,7 @@ class NoiseEncoder(nn.Module):
         self.layers = nn.Sequential(*layers)
 
     def forward(self, emb, noise):
+        print('emb size is ', emb.size())
+        print('noise size is ', noise.size())
         x = torch.cat([emb, noise], dim=1)
         return self.layers(x)
