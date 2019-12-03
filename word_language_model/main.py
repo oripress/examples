@@ -91,7 +91,7 @@ train_data = batchify(corpus.train, args.batch_size)
 val_data = batchify(corpus.valid, eval_batch_size)
 test_data = batchify(corpus.test, eval_batch_size)
 
-train_noise = torch.randn(train_data.size(0), args.emsize)
+train_noise = torch.randn(train_data.size(0), train_data.size(1), args.emsize)
 val_noise = torch.randn(val_data.size(0), args.emsize)
 test_noise = torch.randn(test_data.size(0), args.emsize)
 
@@ -153,7 +153,7 @@ def evaluate(data_source):
     with torch.no_grad():
         for i in range(0, data_source.size(0) - 1, args.bptt):
             data, targets = get_batch(data_source, i)
-            noise = torch.randn((data.size(0), args.emsize), device=device)
+            noise = torch.randn((data.size(0), data.size(1), args.emsize), device=device)
             if args.model == 'Transformer':
                 output = model(data)
             else:
