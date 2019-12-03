@@ -166,7 +166,7 @@ class NoiseEncoder(nn.Module):
         layers = [nn.Linear(20 * 2 * ninp, 20 * 2 * ninp),
                   nn.BatchNorm1d(20 * 2 * ninp),
                   nn.ReLU(inplace=True),
-                  nn.Linear(20 * 2 * ninp, ninp)]
+                  nn.Linear(20 * 2 * ninp, 20 * ninp)]
         self.layers = nn.Sequential(*layers)
 
     def forward(self, emb, noise):
@@ -179,10 +179,8 @@ class NoiseEncoder(nn.Module):
         emb = emb.view((emb.size(0), -1))
         noise = noise.view((noise.size(0), -1))
 
-
         x = torch.cat([emb, noise], dim=1)
         x = self.layers(x)
         x = x.view(es0, es1, -1)
 
-        print('x size is ', x.size())
         return x
