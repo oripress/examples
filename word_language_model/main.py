@@ -184,7 +184,7 @@ def train():
         data, targets = get_batch(train_data, i)
         if len(data) == 0:
             continue
-        if len(data[0]!= args.batch_size:
+        if len(data[0]) != args.batch_size:
             continue
         noise = get_noise(train_noise, train_data, i)
         noise = noise.to(device=device)
